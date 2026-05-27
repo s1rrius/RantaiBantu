@@ -1,0 +1,139 @@
+[CHANGE LOG]
+timestamp: 2026-05-07T19:42:00+07:00
+change_type: architecture
+scope: project structure
+description: Initialized Vite React-TS project in frontend directory
+reason: Create a fast, modern frontend application for the blockchain transaction simulation prototype.
+impact: Sets up the development environment for the user interface.
+
+[CONTEXT LOG]
+timestamp: 2026-05-07T19:42:00+07:00
+current_task: Initialize project and plan prototype structure
+summary: Set up React-TS frontend and planned simulation architecture for the blockchain prototype.
+active_goals: Implement a minimalist, glassmorphic UI; build a JS-based mock blockchain logic for the UI to interact with.
+recent_changes: Initialized frontend using create-vite.
+decisions: Using a frontend-only mock blockchain first to rapidly prototype the UI and interaction logic per the design preferences, before connecting to a real Hardhat network if needed.
+assumptions: The user's main goal is proving the concept via a visual prototype.
+constraints: Use Vanilla CSS. Ensure UI matches "Minimalism, Glassmorphism, Liquid Glass".
+risks: Building a full Hardhat setup might be overkill for a pure UI prototype, so a mock JS blockchain is safer for rapid visual iteration.
+next_steps: Install dependencies, create UI components, and build JS mock blockchain classes.
+
+[CHANGE LOG]
+timestamp: 2026-05-07T19:46:00+07:00
+change_type: code
+scope: frontend
+description: Implemented JS Mock Blockchain, React UI with Glassmorphism
+reason: Demonstrate transparency and transaction integrity using a mock blockchain simulation for the prototype app.
+impact: Provides a visual proof-of-concept application for inter-city transactions.
+
+[CONTEXT LOG]
+timestamp: 2026-05-07T19:46:00+07:00
+current_task: Complete the blockchain prototype app
+summary: Implemented a responsive React app simulating a blockchain network with glassmorphism UI.
+active_goals: Deploy/run the local server for user testing.
+recent_changes: Created App.tsx, index.css, and blockchain.ts. Built successfully.
+decisions: Adhered to pure React state for demo speed over actual smart contracts.
+assumptions: The UI needs to convey immutability and hashing visually.
+constraints: Vanilla CSS.
+risks: None.
+next_steps: Instruct the user to run the app using npm run dev.
+[CHANGE LOG]
+	imestamp: 2026-05-08T00:25:00+07:00
+change_type: code
+scope: run.bat
+description: Added automated venv creation and dependency installation.
+eason: Improve developer onboarding and project setup experience.
+impact: Users can now run the project with a single click without manual venv management.
+`n[CONTEXT LOG]
+	imestamp: 2026-05-08T00:25:00+07:00
+current_task: Enhance run script setup
+summary: Modified run.bat to handle venv creation and dependency installation automatically.
+ctive_goals: Ensure smooth project startup; maintain documentation consistency.
+ecent_changes: Updated run.bat and MEMORY.md.
+decisions: Automated backend venv setup; kept frontend setup as is (assuming system python for now).
+ssumptions: User has python installed.
+constraints: Windows batch environment.
+isks: Dependency installation might fail if pip is outdated or internet is missing.
+
+ext_steps: Verify setup with user.
+
+[CHANGE LOG]
+	imestamp: 2026-05-08T00:50:00+07:00
+change_type: decision
+scope: database
+description: Cleared all entries from the contracts table in blockchain.db.
+eason: User requested a clean slate for policies after changing the contract logic.
+impact: All existing smart policies are removed; new ones must be created under the updated governance rules.
+`n[CONTEXT LOG]
+	imestamp: 2026-05-08T00:50:00+07:00
+current_task: Database maintenance
+summary: Successfully cleared all policies from the SQLite database.
+ctive_goals: Provide a clean environment for testing the new smart contract logic.
+ecent_changes: Ran clear_contracts.py script.
+decisions: Wiped the contracts table.
+ssumptions: User wants to start fresh with policies.
+constraints: None.
+isks: Transactions previously linked to deleted contracts may have orphaned references.
+
+ext_steps: Inform user that the database has been cleared.
+
+[CHANGE LOG]
+	imestamp: 2026-05-08T00:55:00+07:00
+change_type: code
+scope: frontend/index.html
+description: Fixed broken HTML in policy form that prevented button from working.
+eason: Restored missing ct-type element needed by JavaScript.
+impact: Policy registration functionality is restored.
+`n[CONTEXT LOG]
+	imestamp: 2026-05-08T00:55:00+07:00
+current_task: Bug fix
+summary: Resolved issue where the Register Policy button was unresponsive.
+ctive_goals: Restore full functionality after simplification refactor.
+ecent_changes: Fixed index.html structure.
+decisions: Replaced orphaned option tag with a hidden input for ct-type.
+ssumptions: None.
+constraints: None.
+isks: None.
+
+ext_steps: Confirm with user.
+
+[CHANGE LOG]
+	imestamp: 2026-05-08T01:05:00+07:00
+change_type: code
+scope: frontend/app.js
+description: Fixed issue where navbar was hidden for guest users.
+eason: fetchProfile was only being called if a token existed, preventing the guest navbar from rendering.
+impact: Top navigation bar is now correctly displayed for all users.
+`n[CONTEXT LOG]
+	imestamp: 2026-05-08T01:05:00+07:00
+current_task: Bug fix
+summary: Resolved issue where the top navigation bar was missing for guest users.
+ctive_goals: Ensure UI visibility for all users.
+ecent_changes: Modified app.js init function.
+decisions: Always call fetchProfile on init.
+ssumptions: None.
+constraints: None.
+isks: None.
+
+ext_steps: Confirm with user.
+
+[CHANGE LOG]
+	imestamp: 2026-05-08T01:10:00+07:00
+change_type: code
+scope: backend/requirements.txt, run.bat
+description: Added flask to requirements and updated frontend to use backend venv.
+eason: Ensure frontend dependencies are managed within the virtual environment and unify python usage.
+impact: Frontend now runs using the project-specific virtual environment.
+`n[CONTEXT LOG]
+	imestamp: 2026-05-08T01:10:00+07:00
+current_task: Venv management
+summary: Integrated frontend into the project virtual environment.
+ctive_goals: Unified dependency management; ensure frontend reliability.
+ecent_changes: Modified requirements.txt and run.bat.
+decisions: Using backend/venv for both backend and frontend servers.
+ssumptions: User will delete the old venv or manually install flask if the venv already exists.
+constraints: None.
+isks: None.
+
+ext_steps: Inform user of changes.
+

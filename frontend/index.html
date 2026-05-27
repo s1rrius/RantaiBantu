@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Simulation — Government Fund Distribution</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        import * as ed from 'https://esm.sh/@noble/ed25519@1.7.1';
+        window.nobleEd25519 = ed;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+
+        <!-- Navigation -->
+        <nav id="navbar" class="hidden glass-panel">
+            <div class="nav-brand">RantaiBantu</div>
+            <div class="nav-links">
+                <a href="#/dashboard" class="nav-link">Dashboard</a>
+                <a href="#/pending" class="nav-link">Pending Transaction</a>
+                <a href="#/chain" class="nav-link">Explorer</a>
+                <a href="#/towns" class="nav-link">Towns</a>
+                <a href="#/submit" class="nav-link" id="nav-submit" style="display: none;">Submit</a>
+                <a href="#/policies" class="nav-link" id="nav-policies" style="display: none;">Policies</a>
+                <a href="#/admin" class="nav-link" id="nav-admin" style="display: none;">Admin</a>
+            </div>
+            <div class="nav-user">
+                <div id="nav-user-info" style="display: none;">
+                    <span id="nav-username"></span> (<span id="nav-role"></span>)
+                    <button onclick="app.logout()" class="btn-sm btn-outline">Logout</button>
+                </div>
+                <div id="nav-guest-info">
+                    <button onclick="app.navigate('#/login')" class="btn-sm btn-primary">Login</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- Views will be injected here by the router -->
+        </main>
+    </div>
+
+    <!-- Templates -->
+    <template id="tpl-register">
+        <div class="auth-container glass-panel">
+            <h2>Register</h2>
+            <form onsubmit="app.handleRegister(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="reg-role" onchange="app.toggleTownInput()" required>
+                        <option value="town_representative">Town Representative</option>
+                        <option value="government">Government</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group" id="reg-town-group">
+                    <label>Town Name</label>
+                    <input type="text" id="reg-town">
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+                <p class="auth-link">Already have an account? <a href="#/login">Login</a></p>
+            </form>
+        </div>
+    </template>
+
+    <template id="tpl-private-key">
+        <div class="auth-container glass-panel">
+            <h2>Registration Successful</h2>
+            <div class="alert alert-warning">
+                <strong>Important:</strong> Save your private key now. It will never be shown again.
+            </div>
+            <div class="pk-display">
+                <textarea id="pk-text" readonly></textarea>
+                <button type="button" class="btn btn-secondary" onclick="app.copyPrivateKey()">Copy to Clipboard</button>
+            </div>
+            <button class="btn btn-primary" onclick="app.navigate('#/login')">I have saved my key</button>
+        </div>
+    </template>
+
+    <template id="tpl-login">
+        <div class="auth-container glass-panel">
+            <h2>Login</h2>
+            <form onsubmit="app.handleLogin(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="log-username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="log-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p class="auth-link">Need an account? <a href="#/register">Register</a></p>
+            </form>
+        </div>
+    </template>
+
+    <template id="tpl-dashboard">
+        <div class="dashboard-grid">
+            <div class="stat-card glass-panel" style="position: relative; overflow: hidden;">
+                <canvas id="spark-blocks" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; opacity: 0.2;"></canvas>
+                <div style="position: relative; z-index: 1;">
+                    <h3>Blocks</h3>
+                    <div class="stat-value" id="dash-blocks">0</div>
+                </div>
+            </div>
+            <div class="stat-card glass-panel" style="position: relative; overflow: hidden;">
+                <canvas id="spark-pending" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; opacity: 0.2;"></canvas>
+                <div style="position: relative; z-index: 1;">
+                    <h3>Pending Transactions</h3>
+                    <div class="stat-value" id="dash-pending">0</div>
+                </div>
+            </div>
+            <div class="stat-card glass-panel" style="position: relative; overflow: hidden;">
+                <canvas id="spark-funds" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; opacity: 0.2;"></canvas>
+                <div style="position: relative; z-index: 1;">
+                    <h3>Total Funds Distributed</h3>
+                    <div class="stat-value" id="dash-funds">0</div>
+                </div>
+            </div>
+            <div class="stat-card glass-panel" id="dash-role-stat-card" style="position: relative; overflow: hidden;">
+                <canvas id="spark-activity" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; opacity: 0.2;"></canvas>
+                <div style="position: relative; z-index: 1;">
+                    <h3 id="dash-role-stat-title">Activity</h3>
+                    <div class="stat-value" id="dash-role-stat">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="feed-grid">
+            <div class="feed-panel glass-panel" style="grid-column: 1 / -1;">
+                <h3>Funds Distribution Overview</h3>
+                <canvas id="fundsChart" style="max-height: 300px; width: 100%;"></canvas>
+            </div>
+            <div class="feed-panel glass-panel">
+                <h3>Recent Blocks</h3>
+                <div id="dash-recent-blocks" class="feed-list"></div>
+            </div>
+            <div class="feed-panel glass-panel">
+                <h3>Recent Pending Transactions</h3>
+                <div id="dash-recent-txs" class="feed-list"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-submit">
+        <div class="form-container glass-panel">
+            <h2>Submit Transaction</h2>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.5rem;">The Government can only send funds using policies established by Town Representatives.</p>
+            <form onsubmit="app.handleSubmitTx(event)">
+                <div class="form-group">
+                    <label>Recipient Town</label>
+                    <select id="tx-town" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="text" id="tx-amount" required oninput="app.formatCurrencyInput(this)">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="tx-desc" required>
+                </div>
+                <div class="form-group" id="tx-contract-group">
+                    <label>Select Smart Policy</label>
+                    <select id="tx-contract" required></select>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Transaction</button>
+            </form>
+        </div>
+    </template>
+
+    <template id="tpl-policies">
+        <div class="form-container glass-panel">
+            <h2>Create New Smart Policy</h2>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.5rem;">As a Town Representative, you define the rules for how your town receives funds.</p>
+            <form onsubmit="app.handleCreateContract(event)">
+                <div class="form-group">
+                    <label>Policy Name</label>
+                    <input type="text" id="ct-name" placeholder="e.g. Road Construction Rule" required>
+                </div>
+                <div class="form-group">
+                    <label>Policy Type</label>
+                    <select id="ct-type" required>
+                        <option value="governance">Standard (Gov + Town Rep)</option>
+                    </select>
+                </div>
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">This policy requires signatures from both the Government and you (the Town Representative) to confirm transactions.</p>
+                <button type="submit" class="btn btn-primary">Register Policy</button>
+            </form>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--border-color);">
+            
+            <h2>Active Policies</h2>
+            <div id="active-policies-list" class="cards-list"></div>
+        </div>
+    </template>
+
+    <template id="tpl-pending">
+        <div class="list-container glass-panel">
+            <h2>Pending Validation</h2>
+            <div id="pending-list" class="cards-list"></div>
+        </div>
+    </template>
+
+    <template id="tpl-chain">
+        <div class="list-container glass-panel">
+            <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                <h2>Blockchain Explorer</h2>
+                <div style="display:flex; gap:1rem;">
+                    <input type="search" id="search-chain" placeholder="Search hash..." oninput="app.renderChain(this.value)" style="width:200px; padding:0.4rem; font-size:0.9rem;">
+                    <button class="btn btn-outline" onclick="app.validateChain()">Validate Chain Integrity</button>
+                </div>
+            </div>
+            <div id="chain-validation-result"></div>
+            <div id="chain-list" class="chain-list"></div>
+        </div>
+    </template>
+
+    <template id="tpl-towns">
+        <div class="list-container glass-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                <h2>Towns Overview</h2>
+                <div style="display:flex; gap:1rem;">
+                    <input type="search" id="search-towns" placeholder="Search town..." oninput="app.renderTowns(this.value)" style="width:200px; padding:0.4rem; font-size:0.9rem;">
+                    <button class="btn btn-outline" onclick="app.exportToCSV('towns')">Export CSV</button>
+                </div>
+            </div>
+            <div id="towns-list" class="cards-grid"></div>
+        </div>
+    </template>
+
+    <template id="tpl-admin">
+        <div class="list-container glass-panel">
+            <h2>Admin Panel</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Registration Date</th>
+                        <th>Public Key</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-users-list"></tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="tpl-sign-modal">
+        <div class="modal-overlay" id="sign-modal">
+            <div class="modal-content glass-panel">
+                <h3>Sign Transaction</h3>
+                <p>Please enter your private key to sign this transaction.</p>
+                <textarea id="sign-pk" placeholder="-----BEGIN PRIVATE KEY-----..."></textarea>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="app.closeSignModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.confirmSign()">Sign</button>
+                </div>
+            </div>
+        </div>
+        </template>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="tx-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <h2 id="modal-tx-title">Transaction Details</h2>
+            <div id="modal-tx-body" style="margin-top:1rem; font-size:0.9rem; line-height:1.6; word-break:break-all;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="document.getElementById('tx-modal').classList.add('hidden')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
